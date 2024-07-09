@@ -3,9 +3,19 @@ const connectToDB = require("./database/database")
 const Blog = require("./model/blogModel")
 
 const app=express()
-app.get("/",(req,res)=>{
+const multer=require("./middleware/multerConfig").multer
+const storage=require("./middleware/multerConfig").storage
+const upload= multer({storage : storage})
+
+
+app.get("/",async(req,res)=>{
     // console.log(req)
-    res.send("haha")
+    //res.send("haha")
+    const blog=await Blog.find({});
+    console.log(blog)
+
+
+    res.render("blog/index.ejs")
 })
 app.use(express.json())
 app.use(express.urlencoded({extended:true}))
@@ -25,18 +35,26 @@ app.get("/contact",(req,res)=>{
 connectToDB();
 
 app.get("/createblog",(req,res)=>{
-    res.render("createroute.ejs")
+    res.render("blog/createroute.ejs")
 })
-app.post("/createblog", async (req,res)=>{
+app.post("/createblog",upload.single('image'), async (req,res)=>{
+const file = req.file;
+    const image = file.filename;
     const {name,description}=req.body
-    await Blog.create(
+     const blog =await Blog.create(
         {
             name,
-            description
+            description,
+            image,
         }
     )
-    res.send("post hitted")
+   res.status(201).json({
+    success:true,
+    message:"Blog created Sucessfully!",
+    data:blog
+   })
 })
+app.use(express.static("./storage"))
 
 app.listen(3000,()=>{
     console.log("Nodejs project has started at port" + 3000)
